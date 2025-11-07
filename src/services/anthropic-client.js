@@ -45,26 +45,22 @@ export async function callAnthropicAPI({ prompt, model = 'claude-haiku-4-5-20251
 /**
  * Parse JSON response from Claude
  * Handles both raw JSON and JSON wrapped in markdown code blocks
+ * Pattern copied from working edge function (generate-mundus-digest)
  */
 export function parseClaudeJSON(responseText) {
-  let jsonText = responseText;
+  let aiText = responseText.trim();
 
-  // Check if response is wrapped in markdown code block
-  const codeBlockMatch = responseText.match(/```json\n?([\s\S]*?)\n?```/);
-  if (codeBlockMatch) {
-    jsonText = codeBlockMatch[1];
-  } else {
-    // Also try plain ```
-    const plainBlockMatch = responseText.match(/```\n?([\s\S]*?)\n?```/);
-    if (plainBlockMatch) {
-      jsonText = plainBlockMatch[1];
-    }
+  // Strip markdown code blocks if present (EXACT pattern from edge function)
+  const jsonMatch = aiText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (jsonMatch) {
+    aiText = jsonMatch[1];
   }
 
   try {
-    return JSON.parse(jsonText);
-  } catch (error) {
-    console.error('[ANTHROPIC] Failed to parse JSON:', error.message);
-    throw new Error(`Failed to parse Claude response as JSON: ${error.message}`);
+    return JSON.parse(aiText);
+  } catch (parseError) {
+    console.error('[ANTHROPIC] Failed to parse JSON:', parseError.message);
+    console.error('[ANTHROPIC] Response starts with:', aiText.substring(0, 100));
+    throw new Error(`Failed to parse Claude response as JSON: ${parseError.message}`);
   }
 }
