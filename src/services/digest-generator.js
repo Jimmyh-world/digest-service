@@ -58,7 +58,7 @@ export async function generateDigest({ client_id, articles, country }) {
     const apiResponse = await callAnthropicAPI({
       prompt: interpolatedPrompt,
       model: promptData.model || 'claude-haiku-4-5-20251001',
-      max_tokens: promptData.max_tokens || 4000,
+      max_tokens: promptData.max_tokens || 8000, // Increased for 100-article digests
       temperature: promptData.temperature || 0.7
     });
 
