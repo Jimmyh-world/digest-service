@@ -57,8 +57,8 @@ export async function generateDigest({ client_id, articles, country }) {
     // Call Anthropic API
     const apiResponse = await callAnthropicAPI({
       prompt: interpolatedPrompt,
-      model: promptData.model || 'claude-haiku-4-5-20251001',
-      max_tokens: promptData.max_tokens || 8000, // Increased for 100-article digests
+      model: promptData.model || 'claude-sonnet-4-5-20250929',
+      max_tokens: promptData.max_tokens || 16000, // Sonnet has much higher capacity for 100-article digests
       temperature: promptData.temperature || 0.7
     });
 

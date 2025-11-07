@@ -2,7 +2,7 @@
  * Anthropic API Client
  */
 
-export async function callAnthropicAPI({ prompt, model = 'claude-haiku-4-5-20251001', max_tokens = 4000, temperature = 0.7 }) {
+export async function callAnthropicAPI({ prompt, model = 'claude-sonnet-4-5-20250929', max_tokens = 16000, temperature = 0.7 }) {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
