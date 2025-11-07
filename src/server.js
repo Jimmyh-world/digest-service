@@ -45,7 +45,7 @@ app.post('/generate-digest', async (req, res) => {
       success: true,
       ...result,
       _metadata: {
-        ...result.metadata,
+        ...result._metadata,
         processing_time_ms: duration
       }
     });

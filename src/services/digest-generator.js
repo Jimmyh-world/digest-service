@@ -75,6 +75,7 @@ export async function generateDigest({ client_id, articles, country, last_digest
 
     const duration = Date.now() - startTime;
     console.log(`[DIGEST-GENERATOR] ✅ Complete digest generated in ${duration}ms`);
+    console.log(`[DIGEST-GENERATOR] Response metadata:`, JSON.stringify(result._metadata, null, 2));
 
     return result;
 
