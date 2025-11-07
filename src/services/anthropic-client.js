@@ -39,14 +39,24 @@ export function parseClaudeJSON(responseText) {
   console.log('[PARSE] Input length:', aiText.length);
   console.log('[PARSE] First 100 chars:', aiText.substring(0, 100));
 
-  // Strip markdown code blocks if present (EXACT pattern from working edge function)
-  const jsonMatch = aiText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
-  if (jsonMatch) {
-    aiText = jsonMatch[1];
-    console.log('[PARSE] Stripped markdown, extracted:', aiText.length, 'chars');
-  } else {
-    console.log('[PARSE] No markdown wrapper found, parsing as-is');
+  // Remove markdown code blocks if present (simple string operations)
+  // Remove opening ```json or ```
+  if (aiText.startsWith('```json')) {
+    aiText = aiText.substring(7).trim(); // Remove ```json
+    console.log('[PARSE] Removed opening ```json');
+  } else if (aiText.startsWith('```')) {
+    aiText = aiText.substring(3).trim(); // Remove ```
+    console.log('[PARSE] Removed opening ```');
   }
+
+  // Remove closing ```
+  if (aiText.endsWith('```')) {
+    aiText = aiText.substring(0, aiText.length - 3).trim();
+    console.log('[PARSE] Removed closing ```');
+  }
+
+  console.log('[PARSE] After stripping, length:', aiText.length);
+  console.log('[PARSE] First 100 after strip:', aiText.substring(0, 100));
 
   let digestData;
   try {
@@ -55,7 +65,8 @@ export function parseClaudeJSON(responseText) {
     return digestData;
   } catch (parseError) {
     console.error('[PARSE] ❌ Failed to parse AI JSON response:', parseError.message);
-    console.error('[PARSE] Text being parsed:', aiText.substring(0, 200));
+    console.error('[PARSE] Text being parsed (first 300):', aiText.substring(0, 300));
+    console.error('[PARSE] Text being parsed (last 100):', aiText.substring(aiText.length - 100));
     throw new Error('AI did not return valid JSON');
   }
 }
