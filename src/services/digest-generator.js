@@ -54,12 +54,15 @@ export async function generateDigest({ client_id, articles, country }) {
 
     console.log(`[DIGEST-GENERATOR] Prompt prepared, calling Anthropic API...`);
 
+    // Add strict JSON instruction to prompt
+    const strictPrompt = interpolatedPrompt + '\n\nIMPORTANT: Return ONLY valid, parseable JSON. No markdown code blocks. No additional text. Ensure all strings are properly escaped and quoted.';
+
     // Call Anthropic API
     const apiResponse = await callAnthropicAPI({
-      prompt: interpolatedPrompt,
+      prompt: strictPrompt,
       model: promptData.model || 'claude-sonnet-4-5-20250929',
-      max_tokens: promptData.max_tokens || 16000, // Sonnet has much higher capacity for 100-article digests
-      temperature: promptData.temperature || 0.7
+      max_tokens: promptData.max_tokens || 16000,
+      temperature: promptData.temperature || 0.5  // Lower temp for more reliable JSON
     });
 
     // Extract response content
