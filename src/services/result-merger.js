@@ -4,6 +4,47 @@
  */
 
 /**
+ * Normalize article structure to match frontend expectations
+ * Ensures source is an object and paragraphs is an array
+ * @param {Object} article - Article to normalize
+ * @returns {Object} Normalized article
+ */
+function normalizeArticle(article) {
+  // Normalize source to object format
+  let source = article.source;
+  if (typeof source === 'string') {
+    source = { name: source, url: article.url || '' };
+  } else if (!source || typeof source !== 'object') {
+    source = { name: 'Unknown Source', url: article.url || '' };
+  }
+
+  // Ensure source has required properties
+  if (!source.name) {
+    source.name = article.source_name || 'Unknown Source';
+  }
+  if (!source.url && article.url) {
+    source.url = article.url;
+  }
+
+  // Normalize paragraphs (convert summary to paragraphs array)
+  let paragraphs = article.paragraphs;
+  if (!Array.isArray(paragraphs)) {
+    // If summary exists, use it; otherwise use empty array
+    const text = article.summary || article.content || '';
+    paragraphs = text ? [text] : [];
+  }
+
+  return {
+    ...article,
+    source,
+    paragraphs,
+    // Remove legacy fields to avoid confusion
+    summary: undefined,
+    content: undefined
+  };
+}
+
+/**
  * Merge batch results into final digest structure
  * @param {Array<Object>} batchResults - Results from all batches
  * @param {Object} client - Client information
@@ -20,7 +61,9 @@ export function mergeBatchResults(batchResults, client, last_digest) {
 
   batchResults.forEach(result => {
     if (result.articles && Array.isArray(result.articles)) {
-      allFilteredArticles.push(...result.articles);
+      // Normalize each article to match frontend expectations
+      const normalizedArticles = result.articles.map(normalizeArticle);
+      allFilteredArticles.push(...normalizedArticles);
     }
     totalSkipped += result.skipped || 0;
     totalDuplicates += result.duplicates || 0;

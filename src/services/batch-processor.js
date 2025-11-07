@@ -59,17 +59,22 @@ export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, cou
   prompt += `  "filtered_articles": [\n`;
   prompt += `    {\n`;
   prompt += `      "title": "Article title",\n`;
-  prompt += `      "source": "Source name",\n`;
+  prompt += `      "source": { "name": "Source name", "url": "article_url" },\n`;
   prompt += `      "relevance_score": 8,\n`;
   prompt += `      "category": "news"|"business"|"politics"|"eu_relations",\n`;
   prompt += `      "priority": "main"|"b_side",\n`;
-  prompt += `      "summary": "Brief summary",\n`;
-  prompt += `      "continued_from_previous": true|false\n`;
+  prompt += `      "paragraphs": ["Paragraph 1", "Paragraph 2", "Paragraph 3"],\n`;
+  prompt += `      "continued_from_previous": true|false,\n`;
+  prompt += `      "article_id": "original_article_id_if_available"\n`;
   prompt += `    }\n`;
   prompt += `  ],\n`;
   prompt += `  "skipped_count": 5,\n`;
   prompt += `  "duplicate_count": 2\n`;
   prompt += `}\n\n`;
+  prompt += `IMPORTANT: \n`;
+  prompt += `- "source" must be an object with "name" and "url" properties\n`;
+  prompt += `- "paragraphs" must be an array of 1-3 paragraph strings\n`;
+  prompt += `- Split summaries into logical paragraphs for better readability\n`;
   prompt += `Return ONLY valid JSON. No markdown. No prose. Ensure all strings are properly escaped.`;
 
   return prompt;
