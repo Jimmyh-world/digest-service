@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  digest-service:
+    build: .
+    container_name: mundus-digest
+    ports:
+      - "3003:3003"
+    networks:
+      - mundus_mundus  # CRITICAL: Same network as mundus + pdf containers
+    environment:
+      - PORT=3003
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  mundus_mundus:
+    external: true  # Use existing network (created by mundus deployment)
