@@ -1,14 +1,10 @@
 /**
  * Anthropic API Client
- * Handles calls to Claude API for digest generation
  */
 
 export async function callAnthropicAPI({ prompt, model = 'claude-haiku-4-5-20251001', max_tokens = 4000, temperature = 0.7 }) {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-  if (!ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY not configured in environment');
-  }
+  if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
 
   console.log('[ANTHROPIC] Calling API with model:', model);
 
@@ -23,44 +19,50 @@ export async function callAnthropicAPI({ prompt, model = 'claude-haiku-4-5-20251
       model,
       max_tokens,
       temperature,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
+      messages: [{ role: 'user', content: prompt }]
     })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[ANTHROPIC] Error response:', response.status, errorText);
     throw new Error(`Anthropic API failed: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
-  console.log('[ANTHROPIC] Response received, processing...');
-
+  console.log('[ANTHROPIC] Response received');
   return data;
 }
 
-/**
- * Parse JSON response from Claude
- * Handles both raw JSON and JSON wrapped in markdown code blocks
- * Pattern copied from working edge function (generate-mundus-digest)
- */
 export function parseClaudeJSON(responseText) {
-  let aiText = responseText.trim();
-
-  // Strip markdown code blocks if present (EXACT pattern from edge function)
-  const jsonMatch = aiText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
-  if (jsonMatch) {
-    aiText = jsonMatch[1];
+  let text = responseText.trim();
+  
+  console.log('[PARSE] Input length:', text.length);
+  console.log('[PARSE] First 100 chars:', JSON.stringify(text.substring(0, 100)));
+  
+  // Try to strip markdown - multiple attempts
+  const patterns = [
+    /```json\s*([\s\S]*?)\s*```/,
+    /```\s*([\s\S]*?)\s*```/,
+    /```(?:json)?\s*(\{[\s\S]*\})\s*```/
+  ];
+  
+  let extracted = null;
+  for (let i = 0; i < patterns.length; i++) {
+    const match = text.match(patterns[i]);
+    if (match) {
+      extracted = match[1].trim();
+      console.log(`[PARSE] Matched pattern ${i}, extracted ${extracted.length} chars`);
+      break;
+    }
   }
-
+  
+  const jsonText = extracted || text;
+  console.log('[PARSE] Parsing:', JSON.stringify(jsonText.substring(0, 50)));
+  
   try {
-    return JSON.parse(aiText);
-  } catch (parseError) {
-    console.error('[ANTHROPIC] Failed to parse JSON:', parseError.message);
-    console.error('[ANTHROPIC] Response starts with:', aiText.substring(0, 100));
-    throw new Error(`Failed to parse Claude response as JSON: ${parseError.message}`);
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error('[PARSE] FAILED:', error.message);
+    throw new Error(`JSON parse failed: ${error.message}`);
   }
 }
