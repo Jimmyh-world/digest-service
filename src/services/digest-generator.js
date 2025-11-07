@@ -58,19 +58,18 @@ export async function generateDigest({ client_id, articles, country, last_digest
     // Merge batch results into final digest
     const digest = mergeBatchResults(batchResults, client, last_digest);
 
-    // Build final response
+    // Build final response (flat structure for backend compatibility)
     const result = {
       success: true,
-      digest: {
-        ...digest,
-        metadata: {
-          ...digest.report.metadata,
-          client_id,
-          client_name: client.name,
-          country,
-          generated_at: new Date().toISOString(),
-          has_previous_context: !!last_digest
-        }
+      report: digest.report,
+      email: digest.email,
+      _metadata: {
+        ...digest.report.metadata,
+        client_id,
+        client_name: client.name,
+        country,
+        generated_at: new Date().toISOString(),
+        has_previous_context: !!last_digest
       }
     };
 

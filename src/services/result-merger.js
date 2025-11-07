@@ -48,6 +48,7 @@ export function mergeBatchResults(batchResults, client, last_digest) {
         duplicates_removed: totalDuplicates,
         batches_processed: batchResults.length
       },
+      main_stories: sections.main,  // Top-level array for frontend
       sections: {
         news: sections.main.filter(a => a.category === 'news'),
         business: sections.main.filter(a => a.category === 'business'),
