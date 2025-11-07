@@ -3,7 +3,7 @@
  * Handles calls to Claude API for digest generation
  */
 
-export async function callAnthropicAPI({ prompt, model = 'claude-3-5-sonnet-20241022', max_tokens = 4000, temperature = 0.7 }) {
+export async function callAnthropicAPI({ prompt, model = 'claude-haiku-4-5-20251001', max_tokens = 4000, temperature = 0.7 }) {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
   if (!ANTHROPIC_API_KEY) {
