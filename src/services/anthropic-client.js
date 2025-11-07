@@ -34,35 +34,28 @@ export async function callAnthropicAPI({ prompt, model = 'claude-haiku-4-5-20251
 }
 
 export function parseClaudeJSON(responseText) {
-  let text = responseText.trim();
-  
-  console.log('[PARSE] Input length:', text.length);
-  console.log('[PARSE] First 100 chars:', JSON.stringify(text.substring(0, 100)));
-  
-  // Try to strip markdown - multiple attempts
-  const patterns = [
-    /```json\s*([\s\S]*?)\s*```/,
-    /```\s*([\s\S]*?)\s*```/,
-    /```(?:json)?\s*(\{[\s\S]*\})\s*```/
-  ];
-  
-  let extracted = null;
-  for (let i = 0; i < patterns.length; i++) {
-    const match = text.match(patterns[i]);
-    if (match) {
-      extracted = match[1].trim();
-      console.log(`[PARSE] Matched pattern ${i}, extracted ${extracted.length} chars`);
-      break;
-    }
+  let aiText = responseText.trim();
+
+  console.log('[PARSE] Input length:', aiText.length);
+  console.log('[PARSE] First 100 chars:', aiText.substring(0, 100));
+
+  // Strip markdown code blocks if present (EXACT pattern from working edge function)
+  const jsonMatch = aiText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (jsonMatch) {
+    aiText = jsonMatch[1];
+    console.log('[PARSE] Stripped markdown, extracted:', aiText.length, 'chars');
+  } else {
+    console.log('[PARSE] No markdown wrapper found, parsing as-is');
   }
-  
-  const jsonText = extracted || text;
-  console.log('[PARSE] Parsing:', JSON.stringify(jsonText.substring(0, 50)));
-  
+
+  let digestData;
   try {
-    return JSON.parse(jsonText);
-  } catch (error) {
-    console.error('[PARSE] FAILED:', error.message);
-    throw new Error(`JSON parse failed: ${error.message}`);
+    digestData = JSON.parse(aiText);
+    console.log('[PARSE] ✅ Successfully parsed JSON');
+    return digestData;
+  } catch (parseError) {
+    console.error('[PARSE] ❌ Failed to parse AI JSON response:', parseError.message);
+    console.error('[PARSE] Text being parsed:', aiText.substring(0, 200));
+    throw new Error('AI did not return valid JSON');
   }
 }
