@@ -62,7 +62,7 @@ export async function generateDigest({ client_id, articles, country }) {
       prompt: strictPrompt,
       model: promptData.model || 'claude-sonnet-4-5-20250929',
       max_tokens: promptData.max_tokens || 16000,
-      temperature: promptData.temperature || 0.5  // Lower temp for more reliable JSON
+      temperature: promptData.temperature || 0.2  // Very low temp for reliable, valid JSON
     });
 
     // Extract response content
