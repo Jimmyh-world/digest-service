@@ -33,7 +33,7 @@ export async function loadPrompt(promptName) {
   console.log(`[PROMPT-LOADER] Loading prompt: ${promptName}`);
 
   const { data, error } = await supabase
-    .from('mundus_prompts')
+    .from('prompts')
     .select('*')
     .eq('name', promptName)
     .single();
@@ -90,7 +90,7 @@ export async function loadPromptVariables() {
   console.log(`[PROMPT-LOADER] Loading prompt variables`);
 
   const { data, error } = await supabase
-    .from('mundus_prompt_variables')
+    .from('prompt_variables')
     .select('*');
 
   if (error) {
