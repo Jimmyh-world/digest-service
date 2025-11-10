@@ -30,6 +30,13 @@ export function chunkArticles(articles, batchSize = BATCH_SIZE) {
 export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, country, last_digest, promptTemplate }) {
   let prompt = `BATCH ${batchNumber}/${totalBatches}: Analyzing ${batch.length} articles for ${client.name}\n\n`;
 
+  // Add client-specific instructions if available
+  const clientBrief = client.preferences?.client_brief || client.brief || client.description;
+  if (clientBrief) {
+    prompt += `=== CLIENT REQUIREMENTS ===\n`;
+    prompt += `${clientBrief}\n\n`;
+  }
+
   // Add last digest context if available
   if (last_digest) {
     prompt += `=== PREVIOUS DIGEST CONTEXT ===\n`;

@@ -130,7 +130,7 @@ export function interpolateTemplate(template, variables) {
 export function buildInterpolationVariables(client, articles, country) {
   return {
     client_name: client.name || '',
-    client_brief: client.brief || client.description || '',
+    client_brief: client.preferences?.client_brief || client.brief || client.description || '',
     country: country || '',
     articles: articles.map(a => `- ${a.title} (${a.source})`).join('\n'),
     article_count: articles.length.toString(),
