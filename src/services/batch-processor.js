@@ -27,8 +27,54 @@ export function chunkArticles(articles, batchSize = BATCH_SIZE) {
  * @param {Object} options - Batch processing options
  * @returns {string} Batch prompt
  */
-export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, country, last_digest, promptTemplate }) {
+export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, country, context, last_digest, promptTemplate }) {
   let prompt = `BATCH ${batchNumber}/${totalBatches}: Analyzing ${batch.length} articles for ${client.name}\n\n`;
+
+  // Add geographic focus if available
+  if (context?.countries || context?.country_primary || country) {
+    const countries = context?.countries || [context?.country_primary || country];
+    const primaryCountry = context?.country_primary || country;
+
+    prompt += `=== GEOGRAPHIC FOCUS ===\n`;
+    prompt += `Primary region: ${primaryCountry}\n`;
+    if (countries.length > 1) {
+      prompt += `Focus countries: ${countries.join(', ')}\n`;
+    }
+    prompt += `These articles are from ${primaryCountry} and the Nordic/Baltic region.\n`;
+    prompt += `Prioritize relevance to ${primaryCountry} and regional developments.\n\n`;
+  }
+
+  // Add client topics if available - STRONG emphasis
+  if (context?.topics && context.topics.length > 0) {
+    prompt += `=== CLIENT TOPICS ===\n`;
+    prompt += `Focus areas: ${context.topics.join(', ')}\n`;
+    prompt += `This client ONLY wants articles about: ${context.topics.join(', ')}\n\n`;
+
+    prompt += `IMPORTANT FOR RELEVANCE SCORING:\n`;
+    prompt += `- Articles directly about ${context.topics.join('/')} should score 8-10\n`;
+    prompt += `- Articles tangentially related to ${context.topics.join('/')} should score 4-6\n`;
+    prompt += `- Articles completely unrelated to ${context.topics.join('/')} should score 0-2\n\n`;
+
+    // Add related keywords hint for the topic
+    if (context.topics.includes('Energy')) {
+      prompt += `Energy includes: solar, wind, batteries, hydrogen, nuclear, grid, renewable, electric vehicles, power generation, energy storage, charging infrastructure\n\n`;
+    }
+  }
+
+  // Add priority keywords if available
+  if (context?.keywords && context.keywords.length > 0) {
+    prompt += `=== KEY INTERESTS ===\n`;
+    prompt += `Priority keywords: ${context.keywords.join(', ')}\n`;
+    prompt += `Articles containing these keywords are HIGH PRIORITY for this client.\n`;
+    prompt += `Boost relevance scores by +1 for articles with these keywords.\n\n`;
+  }
+
+  // Add categories context if available
+  if (context?.categories && context.categories.length > 0) {
+    prompt += `=== SOURCE CATEGORIES ===\n`;
+    prompt += `Articles pre-filtered to: ${context.categories.join(', ')}\n`;
+    prompt += `Categorize your output as: news, business, politics, eu_relations\n\n`;
+  }
 
   // Add client-specific instructions if available
   const clientBrief = client.preferences?.client_brief || client.brief || client.description;
@@ -38,7 +84,7 @@ export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, cou
   }
 
   // Add language requirement
-  const language = client.preferences?.language || 'en';
+  const language = context?.language || client.preferences?.language || 'en';
   const languageMap = {
     'en': 'English',
     'sv': 'Swedish',
@@ -105,7 +151,7 @@ export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, cou
  * @param {Object} options - Batch processing options
  * @returns {Promise<Object>} Batch result with filtered articles
  */
-export async function processBatch({ batch, batchNumber, totalBatches, client, country, last_digest, promptTemplate }) {
+export async function processBatch({ batch, batchNumber, totalBatches, client, country, context, last_digest, promptTemplate }) {
   console.log(`[BATCH-PROCESSOR] Processing batch ${batchNumber}/${totalBatches} (${batch.length} articles)`);
 
   const batchPrompt = buildBatchPrompt({
@@ -114,6 +160,7 @@ export async function processBatch({ batch, batchNumber, totalBatches, client, c
     totalBatches,
     client,
     country,
+    context,  // Pass full client context
     last_digest,
     promptTemplate
   });

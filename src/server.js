@@ -18,7 +18,7 @@ app.get('/health', (req, res) => {
 // Main digest generation endpoint
 app.post('/generate-digest', async (req, res) => {
   try {
-    const { client_id, articles, country, last_digest } = req.body;
+    const { client_id, articles, country, context, last_digest } = req.body;
 
     // Validate input
     if (!client_id || !articles || articles.length === 0) {
@@ -29,13 +29,22 @@ app.post('/generate-digest', async (req, res) => {
     }
 
     console.log(`[DIGEST] Processing ${articles.length} articles for client ${client_id}`);
+    if (context) {
+      console.log(`[DIGEST] Client context: topics=${context.topics?.join(',') || 'none'}, countries=${context.countries?.join(',') || country}, keywords=${context.keywords?.length || 0}`);
+    }
     if (last_digest) {
       console.log(`[DIGEST] With previous digest context from ${last_digest.created_at}`);
     }
     const startTime = Date.now();
 
-    // Generate digest with optional context
-    const result = await generateDigest({ client_id, articles, country, last_digest });
+    // Generate digest with full client context
+    const result = await generateDigest({
+      client_id,
+      articles,
+      country: country || context?.country_primary,  // Backward compatibility
+      context,  // Pass full context object
+      last_digest
+    });
 
     const duration = Date.now() - startTime;
     console.log(`[DIGEST] Completed in ${duration}ms`);

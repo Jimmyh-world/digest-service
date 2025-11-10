@@ -14,10 +14,11 @@ import { mergeBatchResults } from './result-merger.js';
  * @param {string} options.client_id - Client ID
  * @param {Array<Object>} options.articles - Array of articles
  * @param {string} options.country - Country name
+ * @param {Object} options.context - Full client context (topics, keywords, countries, etc)
  * @param {Object} options.last_digest - Previous digest for context (optional)
  * @returns {Promise<Object>} Generated digest with report and email
  */
-export async function generateDigest({ client_id, articles, country, last_digest }) {
+export async function generateDigest({ client_id, articles, country, context, last_digest }) {
   const startTime = Date.now();
 
   try {
@@ -46,10 +47,11 @@ export async function generateDigest({ client_id, articles, country, last_digest
     // Load client details from Supabase
     const client = await loadClient(client_id);
 
-    // Process articles in batches
+    // Process articles in batches with full context
     const batchResults = await processAllBatches(validArticles, {
       client,
       country,
+      context,  // Pass full client context for AI prompts
       last_digest
     });
 
