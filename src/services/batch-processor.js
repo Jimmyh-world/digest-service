@@ -37,6 +37,19 @@ export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, cou
     prompt += `${clientBrief}\n\n`;
   }
 
+  // Add language requirement
+  const language = client.preferences?.language || 'en';
+  const languageMap = {
+    'en': 'English',
+    'sv': 'Swedish',
+    'no': 'Norwegian',
+    'da': 'Danish',
+    'fi': 'Finnish'
+  };
+  const languageName = languageMap[language] || 'English';
+  prompt += `=== LANGUAGE ===\n`;
+  prompt += `Write all paragraphs in ${languageName}. Translate article content if needed.\n\n`;
+
   // Add last digest context if available
   if (last_digest) {
     prompt += `=== PREVIOUS DIGEST CONTEXT ===\n`;
