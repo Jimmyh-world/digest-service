@@ -91,18 +91,20 @@ LANGUAGE AWARENESS:
 - "kraftigt vinst" (significant profit) ≠ power generation (false positive)
 
 RELEVANCE SCORING (0-10):
-- 9-10: Directly about ${topicList} with significant developments (solar company deals, nuclear investments)
-- 7-8: Clearly related to ${topicList}, newsworthy (battery tech, energy policy)
-- 5-6: Tangentially related to ${topicList} (electric vehicle infrastructure, grid tech)
-- 3-4: Mentions ${topicList} but not the focus
-- 0-2: Unrelated to ${topicList} (pharma, banking, general business)
+- 9-10: Directly about ${topicList} with major developments (solar company deals, nuclear investments)
+- 7-8: Clearly related to ${topicList}, significant news (battery tech, energy policy)
+- 5-6: Related to ${topicList}, newsworthy (electric vehicle infrastructure, grid tech)
+- 3-4: Loosely related to ${topicList} or mentions it (energy company earnings, tech developments)
+- 1-2: Minimal connection to ${topicList} (energy mentioned but not main focus)
+- 0: Completely unrelated to ${topicList} (pharma, banking with false positive keywords)
 
 SELECTION CRITERIA:
-- Keep articles scoring 5+ for relevance (inclusive)
-- Select up to ${targetCount} articles (can be fewer if not enough are relevant)
+- Keep articles scoring 3+ for relevance (inclusive - gives batch processor more to work with)
+- Aim for ${targetCount} articles to give batch processor good selection
 - Prioritize higher relevance scores
-- Include tangentially related articles (score 5-6) to provide breadth
-- Avoid false positives from keyword fragments
+- Include loosely related articles (score 3-4) - batch processor will filter further
+- ONLY reject completely unrelated articles (score 0-2)
+- Avoid false positives from keyword fragments (Megasol banking, pharma companies)
 
 ARTICLES TO FILTER (${articles.length} total):
 
