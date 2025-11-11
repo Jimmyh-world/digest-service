@@ -1,6 +1,6 @@
 /**
  * Digest Generator Service
- * Two-stage AI filtering: Pre-filter (semantic) → Batch processing (content generation)
+ * Three-stage AI pipeline: Pre-filter → Batch processing → Email generation
  */
 
 import { loadClient } from './prompt-loader.js';
@@ -8,6 +8,7 @@ import { filterValidArticles } from './article-formatter.js';
 import { preFilterArticles } from './pre-filter.js';
 import { processAllBatches } from './batch-processor.js';
 import { mergeBatchResults } from './result-merger.js';
+import { generateDigestEmail } from './email-generator.js';
 
 /**
  * Main digest generation function with batching
@@ -88,21 +89,38 @@ export async function generateDigest({ client_id, articles, country, context, la
 
     console.log(`[DIGEST-GENERATOR] All batches processed successfully`);
 
-    // Merge batch results into final digest
+    // Merge batch results into final digest (without email - will generate separately)
     const digest = mergeBatchResults(batchResults, client, last_digest);
+
+    // STAGE 3: Generate personalized email using AI
+    let emailData;
+    try {
+      console.log(`[DIGEST-GENERATOR] Starting AI email generation`);
+      emailData = await generateDigestEmail({
+        digest,
+        client,
+        context
+      });
+      console.log(`[DIGEST-GENERATOR] Email generated: "${emailData.subject}"`);
+    } catch (error) {
+      console.error(`[DIGEST-GENERATOR] Email generation failed, using fallback:`, error.message);
+      // Fallback to simple template if AI fails
+      emailData = digest.email;  // Use result-merger's template as fallback
+    }
 
     // Build final response (flat structure for backend compatibility)
     const result = {
       success: true,
       report: digest.report,
-      email: digest.email,
+      email: emailData,  // Use AI-generated email
       _metadata: {
         ...digest.report.metadata,
         client_id,
         client_name: client.name,
         country,
         generated_at: new Date().toISOString(),
-        has_previous_context: !!last_digest
+        has_previous_context: !!last_digest,
+        email_generated_by: emailData === digest.email ? 'template' : 'ai'
       }
     };
 
