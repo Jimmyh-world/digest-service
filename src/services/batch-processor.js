@@ -94,7 +94,11 @@ export function buildBatchPrompt({ batch, batchNumber, totalBatches, client, cou
   };
   const languageName = languageMap[language] || 'English';
   prompt += `=== LANGUAGE ===\n`;
-  prompt += `Write all paragraphs in ${languageName}. Translate article content if needed.\n\n`;
+  prompt += `ALL content must be in ${languageName}:\n`;
+  prompt += `- Translate article TITLES to ${languageName}\n`;
+  prompt += `- Write all paragraphs in ${languageName}\n`;
+  prompt += `- Translate quotes and names appropriately\n`;
+  prompt += `\nIMPORTANT: Do not keep original Swedish/Nordic titles - translate everything to ${languageName}.\n\n`;
 
   // Add last digest context if available
   if (last_digest) {
