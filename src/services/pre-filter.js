@@ -44,50 +44,64 @@ Summary: ${summary.substring(0, 300)}
  * Build pre-filter prompt
  * @param {Array<Object>} articles - Articles to filter
  * @param {Array<string>} topics - Client topics
+ * @param {Array<string>} categories - Source categories (Business, Technology, Politics)
  * @param {string} clientName - Client name
  * @param {number} targetCount - Target number of filtered articles
  * @returns {string} Pre-filter prompt
  */
-function buildPreFilterPrompt(articles, topics, clientName, targetCount) {
+function buildPreFilterPrompt(articles, topics, categories, clientName, targetCount) {
   const topicList = topics.join(', ');
   const keywordHints = buildTopicKeywordHints(topics);
+  const categoryList = categories?.join(', ') || 'all categories';
 
   return `You are a content curator for ${clientName}, filtering articles by topic relevance.
 
 CLIENT TOPICS: ${topicList}
+SOURCE CATEGORIES: ${categoryList}
+
+IMPORTANT CONTEXT:
+These articles are already pre-filtered to ${categoryList} categories.
+You are looking for ${categoryList} articles ABOUT ${topicList} topics.
+
+Example: If topic is "Energy" and categories are "Business, Technology, Politics":
+- ✅ Business article about solar company deals → RELEVANT
+- ✅ Technology article about battery innovations → RELEVANT
+- ✅ Politics article about energy policy → RELEVANT
+- ❌ Business article about pharma company → NOT RELEVANT
+- ❌ Banking article (even if company name has "sol") → NOT RELEVANT
 
 You must select the top ${targetCount} articles MOST RELEVANT to these topics using SEMANTIC UNDERSTANDING.
 
 SEMANTIC FILTERING GUIDELINES:
 
-For "${topicList}" topics, include articles about:
+For "${topicList}" topics, look for articles about:
 ${keywordHints}
 
 IMPORTANT SEMANTIC RULES:
 - Use semantic understanding, NOT just keyword matching
-- "Grid modernization" IS Energy (even without "energy" keyword)
-- "Battery manufacturing" IS Energy
-- "EV charging network" IS Energy
-- "Megasol banking system" is NOT Energy (even if "sol" sounds like "solar")
-- "Kraftigt vinst" (Swedish: significant profit) is NOT Energy (even if "kraft" = power)
-- Company names containing topic words are NOT automatically relevant
+- Articles ABOUT ${topicList} companies/developments are relevant
+- Articles that MENTION ${topicList} in passing are NOT relevant
+- Company names containing topic fragments are NOT automatically relevant
+- Context matters (Swedish language ambiguity)
 
 LANGUAGE AWARENESS:
 - Articles may be in Swedish/Nordic languages
-- Understand Swedish words: "kraft" (power/force), "vind" (wind/gain), "sol" (sun)
-- Context matters: "vind i seglen" (wind in sails) = metaphor, not wind energy
+- Understand Swedish word context: "kraft" (power/force), "vind" (wind/gain), "sol" (sun)
+- "Megasol" banking ≠ solar energy (false positive)
+- "kraftigt vinst" (significant profit) ≠ power generation (false positive)
 
 RELEVANCE SCORING (0-10):
-- 9-10: Directly about ${topicList} with significant developments
-- 7-8: Clearly related to ${topicList}, newsworthy
-- 5-6: Tangentially related to ${topicList}
+- 9-10: Directly about ${topicList} with significant developments (solar company deals, nuclear investments)
+- 7-8: Clearly related to ${topicList}, newsworthy (battery tech, energy policy)
+- 5-6: Tangentially related to ${topicList} (electric vehicle infrastructure, grid tech)
 - 3-4: Mentions ${topicList} but not the focus
-- 0-2: Unrelated to ${topicList}
+- 0-2: Unrelated to ${topicList} (pharma, banking, general business)
 
 SELECTION CRITERIA:
-- Keep articles scoring 6+ for relevance
-- Select EXACTLY ${targetCount} articles (or fewer if not enough are relevant)
+- Keep articles scoring 5+ for relevance (inclusive)
+- Select up to ${targetCount} articles (can be fewer if not enough are relevant)
 - Prioritize higher relevance scores
+- Include tangentially related articles (score 5-6) to provide breadth
 - Avoid false positives from keyword fragments
 
 ARTICLES TO FILTER (${articles.length} total):
@@ -99,10 +113,11 @@ YOUR TASK:
 Use the "filter_articles_by_topic" tool to return the filtered results.
 
 IMPORTANT:
-- Select articles that are GENUINELY about ${topicList}
-- Reject false positives (banking/pharma/general business NOT about energy)
-- Provide clear relevance_reason for each selected article
-- Be selective - quality over quantity`;
+- Select ${categoryList} articles that are ABOUT ${topicList}
+- Include direct + tangentially related articles for good coverage
+- Reject false positives (wrong topic entirely)
+- Provide clear relevance_reason for each article
+- Aim for ${targetCount} articles if enough are relevant`;
 }
 
 /**
@@ -110,9 +125,9 @@ IMPORTANT:
  * @param {Object} options - Pre-filter options
  * @returns {Promise<Array>} Filtered article IDs with scores
  */
-export async function preFilterArticles({ articles, topics, clientName, targetCount = 100 }) {
+export async function preFilterArticles({ articles, topics, categories, clientName, targetCount = 100 }) {
   console.log(`[PRE-FILTER] Starting semantic filtering: ${articles.length} articles → ${targetCount} target`);
-  console.log(`[PRE-FILTER] Client: ${clientName}, Topics: ${topics.join(', ')}`);
+  console.log(`[PRE-FILTER] Client: ${clientName}, Topics: ${topics.join(', ')}, Categories: ${categories?.join(', ') || 'all'}`);
 
   if (!topics || topics.length === 0) {
     console.log(`[PRE-FILTER] No topics specified, skipping pre-filter (returning all articles)`);
@@ -122,8 +137,8 @@ export async function preFilterArticles({ articles, topics, clientName, targetCo
   const startTime = Date.now();
 
   try {
-    // Build prompt
-    const prompt = buildPreFilterPrompt(articles, topics, clientName, targetCount);
+    // Build prompt with category context
+    const prompt = buildPreFilterPrompt(articles, topics, categories, clientName, targetCount);
 
     // Call Claude API with Tool Use
     const response = await fetch('https://api.anthropic.com/v1/messages', {

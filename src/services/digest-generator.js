@@ -51,14 +51,17 @@ export async function generateDigest({ client_id, articles, country, context, la
     // STAGE 1: Pre-filter articles by topic relevance (if topics specified)
     let articlesToProcess = validArticles;
     const clientTopics = context?.topics || client.preferences?.topics || [];
+    const clientCategories = context?.categories || client.preferences?.categories || [];
 
     if (clientTopics.length > 0 && validArticles.length > 100) {
       console.log(`[DIGEST-GENERATOR] Starting two-stage filtering for topics: ${clientTopics.join(', ')}`);
+      console.log(`[DIGEST-GENERATOR] Source categories: ${clientCategories.join(', ')}`);
 
       try {
         const preFiltered = await preFilterArticles({
           articles: validArticles,
           topics: clientTopics,
+          categories: clientCategories,  // Pass categories for context
           clientName: client.name,
           targetCount: 100  // Filter down to 100 most relevant
         });
