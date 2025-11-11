@@ -1,10 +1,11 @@
 /**
  * Digest Generator Service
- * Multi-batch processing with context preservation
+ * Two-stage AI filtering: Pre-filter (semantic) → Batch processing (content generation)
  */
 
 import { loadClient } from './prompt-loader.js';
 import { filterValidArticles } from './article-formatter.js';
+import { preFilterArticles } from './pre-filter.js';
 import { processAllBatches } from './batch-processor.js';
 import { mergeBatchResults } from './result-merger.js';
 
@@ -47,8 +48,35 @@ export async function generateDigest({ client_id, articles, country, context, la
     // Load client details from Supabase
     const client = await loadClient(client_id);
 
-    // Process articles in batches with full context
-    const batchResults = await processAllBatches(validArticles, {
+    // STAGE 1: Pre-filter articles by topic relevance (if topics specified)
+    let articlesToProcess = validArticles;
+    const clientTopics = context?.topics || client.preferences?.topics || [];
+
+    if (clientTopics.length > 0 && validArticles.length > 100) {
+      console.log(`[DIGEST-GENERATOR] Starting two-stage filtering for topics: ${clientTopics.join(', ')}`);
+
+      try {
+        const preFiltered = await preFilterArticles({
+          articles: validArticles,
+          topics: clientTopics,
+          clientName: client.name,
+          targetCount: 100  // Filter down to 100 most relevant
+        });
+
+        articlesToProcess = preFiltered;
+        console.log(`[DIGEST-GENERATOR] Pre-filter: ${validArticles.length} → ${articlesToProcess.length} articles`);
+      } catch (error) {
+        console.error(`[DIGEST-GENERATOR] Pre-filter failed, using all articles:`, error.message);
+        // Fall back to using all articles if pre-filter fails
+        articlesToProcess = validArticles.slice(0, 100);
+      }
+    } else {
+      console.log(`[DIGEST-GENERATOR] Skipping pre-filter (no topics or <100 articles)`);
+      articlesToProcess = validArticles.slice(0, 100);
+    }
+
+    // STAGE 2: Process articles in batches with full context
+    const batchResults = await processAllBatches(articlesToProcess, {
       client,
       country,
       context,  // Pass full client context for AI prompts
